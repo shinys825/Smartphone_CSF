@@ -8,40 +8,18 @@ library(doParallel) # 멀티코어 병렬처리 지원
 #cl <- makeCluster(4)    # 멀티코어 개수 지정
 #registerDoParallel(cl)  # 병렬처리에 등록
 useNIADic() # NIADic 사용
-
-setwd("d:/works/project/phone_csf") # 작업경로 지정
+install.packages("rJava")
+work_dir = "D:/Doucument/project/phone_csf"
+setwd(work_dir) # 작업경로 지정
 
 # 단어 POS 태깅용 함수
 ko_tokenizer = function(x) {
-    sentence = as.character(x)
-    sentence = gsub('[-,~?!.&;]', ' ', sentence)
-    pos = paste(MorphAnalyzer(sentence))
-    
-    ## 품사별 추출
-    extracted = str_match(pos, '([ㄱ-ㅎ가-힣A-z0-9]+)/(paa|ncps|pvg)')
-    len.analyzer = length(extracted[,1])
-    
-    ## 추출 키워드 통합
-    if (len.analyzer == 0) {
-        keyword = "none"
-        return(keyword)
-    }
-    else {
-        keyword = c(extracted[1:len.analyzer,2])
-        keyword = keyword[!is.na(keyword)]
-        keyword = paste(keyword, collapse = " ")
-        keyword = gsub('[:^:]', '', keyword)
-        return(keyword)
-    }
-}    # 일반단어 추출용
-
-ko_tokenizer2 = function(x) {
   sentence = as.character(x)
   sentence = gsub('[-,~?!.&;]', ' ', sentence)
   pos = paste(MorphAnalyzer(sentence))
   
   ## 품사별 추출
-  extracted = str_match(pos, '([ㄱ-ㅎ가-힣A-z0-9]+)/(f|ncn|ncpa|ncps|paa)')
+  extracted = str_match(pos, '([ㄱ-ㅎ가-힣A-z0-9]+)/(f|ncn|ncpa|ncps|paa|pvg)')
   len.analyzer = length(extracted[,1])
   
   ## 추출 키워드 통합
@@ -57,7 +35,7 @@ ko_tokenizer2 = function(x) {
         return(keyword)
     }
 }    # 일반단어 추출용
-senti_tokenizer = function(x) {
+#senti_tokenizer = function(x) {
   sentence = as.character(x)
   sentence = gsub('[-,~?!.&;]', ' ', sentence)
   pos = paste(MorphAnalyzer(sentence))
@@ -78,20 +56,42 @@ senti_tokenizer = function(x) {
         return(keyword)
     }
 } # 감정단어 추출용
+#senti_tokenizer2 = function(x) {
+    sentence = as.character(x)
+    sentence = gsub('[-,~?!.&;]', ' ', sentence)
+    pos = paste(MorphAnalyzer(sentence))
+    
+    ## 품사별 추출
+    extracted = str_match(pos, '([ㄱ-ㅎ가-힣A-z0-9]+)/(paa|ncps|pvg)')
+    len.analyzer = length(extracted[,1])
+    
+    ## 추출 키워드 통합
+    if (len.analyzer == 0) {
+        keyword = "none"
+        return(keyword)
+    }
+    else {
+        keyword = c(extracted[1:len.analyzer,2])
+        keyword = keyword[!is.na(keyword)]
+        keyword = paste(keyword, collapse = " ")
+        keyword = gsub('[:^:]', '', keyword)
+        return(keyword)
+    }
+}    # 감정단어 간이 추출용
 
 # 문서 처리용 함수
-kotok = function(df) {
-  filtered_df = list()
+#kotok = function(df) {
+  #filtered_df = list()
   count = 0
   for (i in seq(df)) {
     filtered = ko_tokenizer(df[i])
-    filtered_df = append(filtered, filtered_df)
+    #filtered_df = append(filtered, filtered_df)
     count = count + 1
     cat('Tokenizer is working... ', count, (count/length(df))*100, '% completed', '\n')
   }
-  return(filtered_df)
+  return(filtered)
 }  # 문서 일반단어 추출
-sentok = function(df) {
+#sentok = function(df) {
     filtered_df = list()
     count = 0
     for (i in seq(df)) {
@@ -104,7 +104,7 @@ sentok = function(df) {
 } # 문서 감정단어 추출
 
 # 멀티코어 병렬처리 함수
-kotok_parel = function(df) {
+#kotok_parel = function(df) {
     filtered_df = foreach(i = 1:length(df),
                           .combine = rbind,
                           .errorhandling='pass',
@@ -113,7 +113,7 @@ kotok_parel = function(df) {
                               filtered = ko_tokenizer(df[i])
                           }
     }    # 문서 일반단어 추출(Parel)
-sentok_parel = function(df) {
+#sentok_parel = function(df) {
     filtered_df = foreach(i = 1:length(df),
                           .combine = rbind,
                           .errorhandling='pass',
@@ -124,20 +124,21 @@ sentok_parel = function(df) {
     }   # 문서 감정단어 추출(Parel)
 
 # 문서 Text set 생성
-raw_data = read_delim('D:/works/project/phone_csf/dataframes/phone_fullframe.csv', '\t') # DataFrame 로딩
-phone_text = subset(raw_data, select=c("title", "content")) # DataFrame 제목, 내용 병합
-phone_text = paste(phone_text$title, phone_text$content)
+raw_data = read_delim('./dataframes/phone_fullframe.csv', '\t') # DataFrame 로딩
+
+# Dataframe Handling
+raw_data$contents = paste(raw_data$title, ' ', raw_data$content)
+raw_data$title = NULL
+raw_data$content = NULL
 
 # Tokenizing
-ko_df = as.matrix(kotok(phone_text))
-senti_df = as.matrix(sentok(phone_text))
+count = 0
+for (i in seq(raw_data$contents)) {
+  raw_data$contents[i] = ko_tokenizer(raw_data$contents[i])
+  count = count + 1
+  cat('Tokenizer is working... ', count, (count/length(raw_data$contents))*100, '% completed', '\n')
+}
 
 # 결과저장
-write.csv(ko_df, file="pcsf_fullframe2.csv", row.names = F, col.names = F)
-write.csv(senti_df, file="pcsf_sentiframe.csv", row.names = F, col.names = F)
-
-
-MorphAnalyzer("액정에 흠집")
-MorphAnalyzer("다시는 안 쓰고 싶다.")
-MorphAnalyzer("좋긴하지만 쓰고 싶지만 비싸서 살 수가 없")
-MorphAnalyzer("좋기는 한데 사긴싫다")
+write.csv(raw_data, file="./dataframes/pcsf_dataframe(ap).csv", row.names = F, col.names = T)
+#write.csv(senti_df, file="pcsf_sentiframe.csv", row.names = F, col.names = F)
