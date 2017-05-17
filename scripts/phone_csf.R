@@ -8,8 +8,7 @@ library(doParallel) # 멀티코어 병렬처리 지원
 #cl <- makeCluster(4)    # 멀티코어 개수 지정
 #registerDoParallel(cl)  # 병렬처리에 등록
 useNIADic() # NIADic 사용
-install.packages("rJava")
-work_dir = "D:/Doucument/project/phone_csf"
+work_dir = "D:/works/project/Smartphone_CSF"
 setwd(work_dir) # 작업경로 지정
 
 # 단어 POS 태깅용 함수
@@ -35,7 +34,7 @@ ko_tokenizer = function(x) {
         return(keyword)
     }
 }    # 일반단어 추출용
-#senti_tokenizer = function(x) {
+senti_tokenizer = function(x) {
   sentence = as.character(x)
   sentence = gsub('[-,~?!.&;]', ' ', sentence)
   pos = paste(MorphAnalyzer(sentence))
@@ -56,7 +55,7 @@ ko_tokenizer = function(x) {
         return(keyword)
     }
 } # 감정단어 추출용
-#senti_tokenizer2 = function(x) {
+senti_tokenizer2 = function(x) {
     sentence = as.character(x)
     sentence = gsub('[-,~?!.&;]', ' ', sentence)
     pos = paste(MorphAnalyzer(sentence))
@@ -80,7 +79,7 @@ ko_tokenizer = function(x) {
 }    # 감정단어 간이 추출용
 
 # 문서 처리용 함수
-#kotok = function(df) {
+kotok = function(df) {
   #filtered_df = list()
   count = 0
   for (i in seq(df)) {
@@ -91,7 +90,7 @@ ko_tokenizer = function(x) {
   }
   return(filtered)
 }  # 문서 일반단어 추출
-#sentok = function(df) {
+sentok = function(df) {
     filtered_df = list()
     count = 0
     for (i in seq(df)) {
@@ -104,7 +103,7 @@ ko_tokenizer = function(x) {
 } # 문서 감정단어 추출
 
 # 멀티코어 병렬처리 함수
-#kotok_parel = function(df) {
+kotok_parel = function(df) {
     filtered_df = foreach(i = 1:length(df),
                           .combine = rbind,
                           .errorhandling='pass',
@@ -113,7 +112,7 @@ ko_tokenizer = function(x) {
                               filtered = ko_tokenizer(df[i])
                           }
     }    # 문서 일반단어 추출(Parel)
-#sentok_parel = function(df) {
+sentok_parel = function(df) {
     filtered_df = foreach(i = 1:length(df),
                           .combine = rbind,
                           .errorhandling='pass',
@@ -124,12 +123,11 @@ ko_tokenizer = function(x) {
     }   # 문서 감정단어 추출(Parel)
 
 # 문서 Text set 생성
-raw_data = read_delim('./dataframes/phone_fullframe.csv', '\t') # DataFrame 로딩
+raw_data = read_delim('./dataframes/phone_fullframe(raw).txt', '\t') # DataFrame 로딩
 
 # Dataframe Handling
-raw_data$contents = paste(raw_data$title, ' ', raw_data$content)
+raw_data$contents = paste(raw_data$title, ' ', raw_data$contents)
 raw_data$title = NULL
-raw_data$content = NULL
 
 # Tokenizing
 count = 0
@@ -140,5 +138,5 @@ for (i in seq(raw_data$contents)) {
 }
 
 # 결과저장
-write.csv(raw_data, file="./dataframes/pcsf_dataframe(ap).csv", row.names = F, col.names = T)
+write.csv(raw_data, file="./dataframes/temp_pcsf_dataframe(ap).csv", row.names = F, col.names = T)
 #write.csv(senti_df, file="pcsf_sentiframe.csv", row.names = F, col.names = F)
