@@ -1,4 +1,4 @@
-# Extract SmartPhone CSF with Text Mining(2017.04.01 ~ )
+# Extract SmartPhone CSF with Text Mining(2017.04. ~ 2017.05., Stopped)
 
 Main Purpose
 
